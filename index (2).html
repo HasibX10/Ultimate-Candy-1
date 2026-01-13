@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ultimate Candy☕🍬</title>
+<style>
+/* FULL COFFEE AESTHETIC 4K STYLE */
+body {
+    margin:0;
+    font-family:'Pretendard','Arial',sans-serif;
+    background: linear-gradient(135deg,#f3e7d1,#d9c4a8,#b99b7c);
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:flex-start;
+    min-height:100vh;
+    padding-top:20px;
+    transition:background 0.5s;
+}
+
+body.night {background: linear-gradient(135deg,#3b2f2f,#5c4b3c,#8b6f5c);}
+
+h1 {
+    font-size:4em;
+    color:#6b4f3b;
+    text-shadow: 2px 2px 5px rgba(255,255,255,0.6);
+    margin-bottom:10px;
+}
+
+.panel {
+    display:flex;
+    gap:30px;
+    margin-bottom:10px;
+    background:rgba(255,248,240,0.7);
+    padding:15px 30px;
+    border-radius:25px;
+    box-shadow:0 10px 30px rgba(0,0,0,0.15);
+    font-size:1.5em;
+    transition:background 0.5s;
+}
+body.night .panel {background: rgba(60,50,50,0.7);}
+
+#score,#timer,#level {font-weight:bold; color:#4b3621; transition: color 0.5s;}
+body.night #score,body.night #timer,body.night #level {color:#ffd8a6;}
+
+#board {
+    display:grid;
+    grid-template-columns:repeat(10,80px);
+    grid-template-rows:repeat(10,80px);
+    gap:8px;
+    padding:25px;
+    border-radius:30px;
+    background:rgba(255,248,240,0.85);
+    box-shadow:0 15px 40px rgba(0,0,0,0.2);
+    transition:background 0.5s;
+}
+body.night #board {background: rgba(50,40,40,0.9);}
+
+.candy {
+    width:80px;
+    height:80px;
+    font-size:50px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    cursor:pointer;
+    user-select:none;
+    transition:all 0.25s;
+    position:relative;
+    border-radius:20px;
+    background:linear-gradient(145deg,#d6b89c,#f5e0c2);
+    box-shadow:5px 5px 15px rgba(0,0,0,0.15), -5px -5px 10px rgba(255,255,255,0.5);
+}
+body.night .candy {background:linear-gradient(145deg,#5c3a2c,#a97c5b);}
+
+.candy:hover {transform:scale(1.2);}
+.matchEffect {animation:sparkle 0.5s forwards;}
+@keyframes sparkle {0%{transform:scale(1);opacity:1;}50%{transform:scale(1.8) rotate(20deg);opacity:0.8;}100%{transform:scale(0);opacity:0;}}
+.explosion {position:absolute; width:100%; height:100%; top:0; left:0; font-size:50px; display:flex; align-items:center; justify-content:center; animation:explode 0.5s forwards;}
+@keyframes explode {0%{transform:scale(1); opacity:1;}50%{transform:scale(2); opacity:0.8;}100%{transform:scale(3); opacity:0;}}
+
+#gameOverScreen {
+    position:fixed;
+    top:0;
+    left:0;
+    width:100%;
+    height:100%;
+    background:rgba(0,0,0,0.6);
+    color:#fff;
+    font-size:2.5em;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    display:none;
+}
+#gameOverScreen button {
+    font-size:1.2em;
+    padding:15px 30px;
+    margin-top:25px;
+    cursor:pointer;
+    border:none;
+    border-radius:20px;
+    background:linear-gradient(135deg,#8b5e3c,#d9a066);
+    color:#fff;
+    box-shadow:0 8px 20px rgba(0,0,0,0.25);
+}
+
+#nightModeToggle{
+    margin-top:10px;
+    font-size:1em;
+    padding:10px 20px;
+    border-radius:15px;
+    cursor:pointer;
+    background:linear-gradient(135deg,#6b4f3b,#d9a066);
+    color:#fff;
+    border:none;
+}
+</style>
+</head>
+<body>
+
+<h2>Ultimate Candy☕🍬</h2
+<div class="panel">
+    <div id="score">Score: 0</div>
+    <div id="level">Level: 1</div>
+    <div id="timer">Time: 120s</div>
+</div>
+
+<div id="board"></div>
+<button id="nightModeToggle">Toggle Night Mode 🌙</button>
+
+<div id="gameOverScreen">
+Game Over!<br>Your Score: <span id="finalScore"></span>
+<button onclick="restartGame()">Restart</button>
+</div>
+
+<audio id="explodeSound" src="https://www.soundjay.com/button/beep-07.mp3"></audio>
+
+<script>
+// JS logic (same as ultimate coffee version)
+const board=document.getElementById('board');
+const scoreDisplay=document.getElementById('score');
+const timerDisplay=document.getElementById('timer');
+const levelDisplay=document.getElementById('level');
+const gameOverScreen=document.getElementById('gameOverScreen');
+const finalScore=document.getElementById('finalScore');
+const explodeSound=document.getElementById('explodeSound');
+const nightToggle=document.getElementById('nightModeToggle');
+
+const width=10;
+const candies=['🍬','🍭','🍡','🍫','🍪','🍩'];
+const special=['🔴','🌟'];
+let squares=[]; let score=0; let timeLeft=120; let level=1; let gameRunning=true; let comboMultiplier=1;
+
+function createBoard(){
+    board.innerHTML=''; squares=[];
+    for(let i=0;i<width*width;i++){
+        const square=document.createElement('div'); 
+        square.setAttribute('draggable',true); 
+        square.setAttribute('id',i); 
+        square.classList.add('candy','fall');
+        square.textContent = Math.random()<0.07 ? special[Math.floor(Math.random()*special.length)] : candies[Math.floor(Math.random()*candies.length)];
+        board.appendChild(square); 
+        squares.push(square);
+    }
+}
+createBoard();
+
+// Drag & drop logic
+let candyDragged,candyReplaced,squareIdDragged,squareIdReplaced;
+squares.forEach(s=>{
+    s.addEventListener('dragstart',dragStart);
+    s.addEventListener('dragend',dragEnd);
+    s.addEventListener('dragover',dragOver);
+    s.addEventListener('dragenter',dragEnter);
+    s.addEventListener('dragleave',dragLeave);
+    s.addEventListener('drop',dragDrop);
+});
+function dragStart(){candyDragged=this.textContent; squareIdDragged=parseInt(this.id);}
+function dragOver(e){e.preventDefault();}
+function dragEnter(e){e.preventDefault();}
+function dragLeave(){}
+function dragDrop(){candyReplaced=this.textContent; squareIdReplaced=parseInt(this.id); this.textContent=candyDragged; squares[squareIdDragged].textContent=candyReplaced;}
+function dragEnd(){let valid=[squareIdDragged-1,squareIdDragged+1,squareIdDragged-width,squareIdDragged+width]; if(!valid.includes(squareIdReplaced)){squares[squareIdDragged].textContent=candyDragged; squares[squareIdReplaced].textContent=candyReplaced;} squareIdReplaced=null;}
+
+// Matches
+function checkMatches(){
+let anyMatch=false; comboMultiplier=1;
+for(let i=0;i<width*width;i++){
+    for(let len=3;len<=width;len++){
+        let row=[]; let r=Math.floor(i/width)*width; if(i+len-1>=r+width) continue;
+        for(let k=0;k<len;k++) row.push(i+k);
+        let c=squares[i].textContent;
+        if(row.every(idx=>squares[idx].textContent===c && c!==''))
+            {row.forEach(idx=>{explode(idx); squares[idx].textContent='';}); score+=len*2*comboMultiplier; comboMultiplier++; if(c==='🔴') activateStriped(i,'row'); if(c==='🌟') activateColorBomb(); anyMatch=true;}
+    }
+    for(let len=3;len<=width;len++){
+        let col=[]; if(i+width*(len-1)>=width*width) continue;
+        for(let k=0;k<len;k++) col.push(i+k*width);
+        let c=squares[i].textContent;
+        if(col.every(idx=>squares[idx].textContent===c && c!==''))
+            {col.forEach(idx=>{explode(idx); squares[idx].textContent='';}); score+=len*2*comboMultiplier; comboMultiplier++; if(c==='🔴') activateStriped(i,'column'); if(c==='🌟') activateColorBomb(); anyMatch=true;}
+    }
+}
+if(anyMatch) explodeSound.play(); scoreDisplay.textContent="Score: "+score;
+}
+
+function explode(idx){let exp=document.createElement('div'); exp.classList.add('explosion'); exp.textContent='💥'; squares[idx].appendChild(exp); setTimeout(()=>exp.remove(),500);}
+function moveDown(){for(let i=width*width-1;i>=0;i--){if(squares[i].textContent===''){let j=i; while(j>=width && squares[j-width].textContent!==''){squares[j].textContent=squares[j-width].textContent; squares[j-width].textContent=''; j-=width;} if(j<width && squares[j].textContent===''){squares[j].textContent=Math.random()<0.07?special[Math.floor(Math.random()*special.length)]:candies[Math.floor(Math.random()*candies.length)];}}}}
+function activateStriped(idx,type){if(type==='row'){let start=Math.floor(idx/width)*width; for(let i=start;i<start+width;i++){explode(i); squares[i].textContent='';}} else{let col=idx%width; for(let i=col;i<width*width;i+=width){explode(i); squares[i].textContent='';}}}
+function activateColorBomb(){let target=candies[Math.floor(Math.random()*candies.length)]; for(let i=0;i<squares.length;i++){if(squares[i].textContent===target){explode(i); squares[i].textContent='';}}}
+let timerInterval=setInterval(()=>{if(!gameRunning)return; timeLeft--; timerDisplay.textContent=`Time: ${timeLeft}s`; if(timeLeft<=0){gameRunning=false; finalScore.textContent=score; gameOverScreen.style.display='flex';}},1000);
+function levelUpCheck(){if(score>=level*150){level++; levelDisplay.textContent="Level: "+level; timeLeft+=30; alert(`Level Up! Level ${level}`);}}
+setInterval(()=>{if(!gameRunning) return; checkMatches(); moveDown(); levelUpCheck();},200);
+function restartGame(){score=0; timeLeft=120; level=1; gameRunning=true; scoreDisplay.textContent="Score: 0"; levelDisplay.textContent="Level: 1"; timerDisplay.textContent="Time: 120s"; createBoard(); gameOverScreen.style.display='none';}
+
+// Night mode toggle
+nightToggle.addEventListener('click',()=>{
+    document.body.classList.toggle('night');
+});
+</script>
+</body>
+</html>
